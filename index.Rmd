@@ -126,7 +126,7 @@ pal_ndbi <-
 
 ```
 
-Mapa de temperatura superficial (LST)
+Temperatura superficial (LST)
 =======================================================================
 
 Row
@@ -180,7 +180,7 @@ leaflet() %>%
 
 ```
 
-Mapa de LST de infraestructura gris
+LST de infraestructura gris
 =======================================================================
 
 Row
@@ -234,7 +234,7 @@ leaflet() %>%
 
 ```
 
-Mapa de índice de vegetación (NDVI)
+Índice de vegetación (NDVI)
 =======================================================================
 
 Row
@@ -288,7 +288,7 @@ leaflet() %>%
 
 ```
 
-Mapa de índice de construcción (NDBI)
+Índice de construcción (NDBI)
 =======================================================================
 
 Row
@@ -342,7 +342,7 @@ leaflet() %>%
 
 ```
 
-Gráfico de LST vs. NDVI
+LST vs. NDVI
 =======================================================================
 
 Row
@@ -380,7 +380,7 @@ plot_ly(data = df_lst_ndbi_ndvi.ordenado_lst,
 
 ```
 
-Gráfico de LST vs. NDBI
+LST vs. NDBI
 =======================================================================
 
 Row
