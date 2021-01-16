@@ -371,7 +371,7 @@ plot_ly(data = df_lst_ndbi_ndvi.ordenado_lst,
             mode = 'lines',
             line = list(color = "green"),
             yaxis = "y2") %>%  
-  layout(title = "La vegetación urbana regula la temperatura",
+  layout(title = "",
          yaxis = list(title = "LST", tickfont = list(color = "red")),
          yaxis2 = ay,
          xaxis = list(title = "Cantón"),
