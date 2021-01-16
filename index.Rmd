@@ -1,0 +1,419 @@
+---
+title: "Calentamiento urbano de la GAM"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+#-------------------- Paquetes --------------------
+
+library(flexdashboard)
+library(dplyr)
+library(sf)
+library(leaflet)
+library(leafem)
+library(esri2sf)
+library(raster)
+library(plotly)
+
+#--------------- URL de geoservicios y archivos de datos --------------
+
+url_agfs_limite_gam <-
+  "https://services9.arcgis.com/RrvMEynxDB8hycVO/arcgis/rest/services/gam_limite_gam/FeatureServer/0"
+
+url_raster_lst <-
+  "https://raw.githubusercontent.com/atlas-servicios-ecosistemicos-gam/datos-calentamiento-urbano/master/gam/LST_GAM_WEB.TIF"
+
+url_raster_lst_infraestructura_gris <-
+  "https://raw.githubusercontent.com/atlas-servicios-ecosistemicos-gam/datos-calentamiento-urbano/master/gam/LST_INFRAESTRUCTURA_GRIS_GAM_WEB.TIF"
+
+url_raster_ndvi <-
+  "https://raw.githubusercontent.com/atlas-servicios-ecosistemicos-gam/datos-calentamiento-urbano/master/gam/NDVI_GAM_WEB.TIF"
+
+url_raster_ndbi <-
+  "https://raw.githubusercontent.com/atlas-servicios-ecosistemicos-gam/datos-calentamiento-urbano/master/gam/NBDI_GAM_WEB.TIF"
+
+url_csv_lst_ndbi_ndvi <-
+  "https://raw.githubusercontent.com/atlas-servicios-ecosistemicos-gam/datos-calentamiento-urbano/main/gam/DATOS_CANTONES_LST_NDVI_NDBI.csv"
+
+#--------------- Objetos sf y raster ---------------
+
+# Límite de la GAM
+sf_limite_gam <-
+  esri2sf(url_agfs_limite_gam)
+
+# Límite de la GAM (reproyectado a Web Mercator)
+sf_limite_gam_web <- 
+  sf_limite_gam %>%
+  st_transform(3857)
+
+# Capa raster de LST (en Web Mercator)
+raster_lst <-
+  raster(url_raster_lst) %>%
+  crop(sf_limite_gam_web) %>%
+  mask(sf_limite_gam_web)
+
+# Capa raster de LST en infraestructura gris (en Web Mercator)
+raster_lst_infraestructura_gris <-
+  raster(url_raster_lst_infraestructura_gris) %>%
+  crop(sf_limite_gam_web) %>%
+  mask(sf_limite_gam_web)
+
+# Capa raster de NDVI (en Web Mercator)
+raster_ndvi <-
+  raster(url_raster_ndvi) %>%
+  crop(sf_limite_gam_web) %>%
+  mask(sf_limite_gam_web)
+
+# Capa raster de NDBI (en Web Mercator)
+raster_ndbi <-
+  raster(url_raster_ndbi) %>%
+  aggregate(fact=2, fun=modal) %>% # ¡¡HAY QUE TRATAR DE ELIMINAR ESTA AGRUPACIÓN. PODRÍA FUNCIONAR AL USAR MÁS MEMORIA LINUX!!  
+  crop(sf_limite_gam_web) %>%
+  mask(sf_limite_gam_web)
+
+#--------------- Objetos df ---------------
+
+# Datos de LST, NDBI y NDVI
+df_lst_ndbi_ndvi <- 
+  read.csv(url_csv_lst_ndbi_ndvi, encoding = "UTF-8")
+
+# Ordenar de mayor a menor por LST
+df_lst_ndbi_ndvi.temp <- order(df_lst_ndbi_ndvi$LST_MEAN, decreasing=FALSE)
+
+# Nuevo data frame ordenado por LST
+df_lst_ndbi_ndvi.ordenado_lst <- df_lst_ndbi_ndvi[df_lst_ndbi_ndvi.temp,]
+
+#---------------- Paletas de colores ---------------
+
+# LST
+colores_lst <- c("blue", "green", "yellow", "red")
+pal_lst <- 
+  colorNumeric(
+    colores_lst, 
+    values(raster_lst),
+    na.color = "transparent"
+  )
+
+# LST de infraestructura gris
+colores_lst_infraestructura_gris <- c("green", "yellow", "red")
+pal_lst_infraestructura_gris <- 
+  colorNumeric(
+    colores_lst_infraestructura_gris, 
+    values(raster_lst_infraestructura_gris),
+    na.color = "transparent"
+  )
+
+# NDVI
+colores_ndvi <- "Greens"
+pal_ndvi <- 
+  colorNumeric(
+    colores_ndvi, 
+    values(raster_ndvi),
+    na.color = "transparent"
+  )
+
+# NDBI
+colores_ndbi <- "Greys"
+pal_ndbi <- 
+  colorNumeric(
+    colores_ndbi, 
+    values(raster_ndbi),
+    na.color = "transparent"
+  )
+
+```
+
+Mapa de temperatura superficial (LST)
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### 
+
+```{r}
+
+leaflet() %>%
+  addProviderTiles(providers$CartoDB.DarkMatter, group = "CartoDB Dark Matter") %>%
+  addProviderTiles(providers$OpenStreetMap.Mapnik, group = "OpenStreetMap") %>%
+  addProviderTiles(providers$Stamen.TonerLite, group = "Stamen Toner Lite") %>%
+  addProviderTiles(providers$Esri.WorldImagery, group = "Imágenes de ESRI") %>%
+  addPolygons(
+    data = sf_limite_gam,
+    color = "Purple",
+    fillColor = "transparent",
+    stroke = TRUE,
+    weight = 6.0,
+    group = "Límite de la GAM"
+  ) %>%
+  addRasterImage(
+    raster_lst, 
+    colors = pal_lst,
+    opacity = 0.9,
+    group = "LST"
+  ) %>%  
+  addLegend(
+    title = "LST (°C)",
+    values = values(raster_lst),
+    pal = pal_lst,
+    position = "bottomright",
+    group = "LST"
+  ) %>%    
+  addLayersControl(
+    baseGroups = c("CartoDB Dark Matter", "OpenStreetMap", "Stamen Toner Lite", "Imágenes de ESRI"),
+    overlayGroups = c("Límite de la GAM", "LST"),
+    options = layersControlOptions(collapsed = TRUE)    
+  ) %>%  
+  addMiniMap(
+    toggleDisplay = TRUE,
+    position = "bottomleft",
+    tiles = providers$CartoDB.DarkMatter
+  ) %>%
+  addScaleBar(
+    position = "bottomleft",
+    options = scaleBarOptions(imperial = FALSE)
+  ) %>%
+  addMouseCoordinates()
+
+```
+
+Mapa de LST de infraestructura gris
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### 
+
+```{r}
+
+leaflet() %>%
+  addProviderTiles(providers$CartoDB.DarkMatter, group = "CartoDB Dark Matter") %>%
+  addProviderTiles(providers$OpenStreetMap.Mapnik, group = "OpenStreetMap") %>%
+  addProviderTiles(providers$Stamen.TonerLite, group = "Stamen Toner Lite") %>%
+  addProviderTiles(providers$Esri.WorldImagery, group = "Imágenes de ESRI") %>%
+  addPolygons(
+    data = sf_limite_gam,
+    color = "Purple",
+    fillColor = "transparent",
+    stroke = TRUE,
+    weight = 6.0,
+    group = "Límite de la GAM"
+  ) %>%
+  addRasterImage(
+    raster_lst_infraestructura_gris, 
+    colors = pal_lst_infraestructura_gris,
+    opacity = 0.9,
+    group = "LST"
+  ) %>%  
+  addLegend(
+    title = "LST (°C)",
+    values = values(raster_lst_infraestructura_gris),
+    pal = pal_lst,
+    position = "bottomright",
+    group = "LST"
+  ) %>%    
+  addLayersControl(
+    baseGroups = c("CartoDB Dark Matter", "OpenStreetMap", "Stamen Toner Lite", "Imágenes de ESRI"),
+    overlayGroups = c("Límite de la GAM", "LST"),
+    options = layersControlOptions(collapsed = TRUE)    
+  ) %>%  
+  addMiniMap(
+    toggleDisplay = TRUE,
+    position = "bottomleft",
+    tiles = providers$CartoDB.DarkMatter
+  ) %>%
+  addScaleBar(
+    position = "bottomleft",
+    options = scaleBarOptions(imperial = FALSE)
+  ) %>%
+  addMouseCoordinates()
+
+```
+
+Mapa de índice de vegetación (NDVI)
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### 
+
+```{r}
+
+leaflet() %>%
+  addProviderTiles(providers$CartoDB.DarkMatter, group = "CartoDB Dark Matter") %>%
+  addProviderTiles(providers$OpenStreetMap.Mapnik, group = "OpenStreetMap") %>%
+  addProviderTiles(providers$Stamen.TonerLite, group = "Stamen Toner Lite") %>%
+  addProviderTiles(providers$Esri.WorldImagery, group = "Imágenes de ESRI") %>%
+  addPolygons(
+    data = sf_limite_gam,
+    color = "Purple",
+    fillColor = "transparent",
+    stroke = TRUE,
+    weight = 6.0,
+    group = "Límite de la GAM"
+  ) %>%
+  addRasterImage(
+    raster_ndvi, 
+    colors = pal_ndvi,
+    opacity = 0.9,
+    group = "NDVI"
+  ) %>%  
+  addLegend(
+    title = "NDVI",
+    values = values(raster_ndvi),
+    pal = pal_ndvi,
+    position = "bottomright",
+    group = "NDVI"
+  ) %>%    
+  addLayersControl(
+    baseGroups = c("CartoDB Dark Matter", "OpenStreetMap", "Stamen Toner Lite", "Imágenes de ESRI"),
+    overlayGroups = c("Límite de la GAM", "NDVI"),
+    options = layersControlOptions(collapsed = TRUE)    
+  ) %>%  
+  addMiniMap(
+    toggleDisplay = TRUE,
+    position = "bottomleft",
+    tiles = providers$CartoDB.DarkMatter
+  ) %>%
+  addScaleBar(
+    position = "bottomleft",
+    options = scaleBarOptions(imperial = FALSE)
+  ) %>%
+  addMouseCoordinates()
+
+```
+
+Mapa de índice de construcción (NDBI)
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+###
+
+```{r}
+
+leaflet() %>%
+  addProviderTiles(providers$OpenStreetMap.Mapnik, group = "OpenStreetMap") %>%  
+  addProviderTiles(providers$CartoDB.DarkMatter, group = "CartoDB Dark Matter") %>%
+  addProviderTiles(providers$Stamen.TonerLite, group = "Stamen Toner Lite") %>%
+  addProviderTiles(providers$Esri.WorldImagery, group = "Imágenes de ESRI") %>%
+  addPolygons(
+    data = sf_limite_gam,
+    color = "Purple",
+    fillColor = "transparent",
+    stroke = TRUE,
+    weight = 6.0,
+    group = "Límite de la GAM"
+  ) %>%
+  addRasterImage(
+    raster_ndbi, 
+    colors = pal_ndbi,
+    opacity = 0.9,
+    group = "NDBI"
+  ) %>%  
+  addLegend(
+    title = "NDBI",
+    values = values(raster_ndbi),
+    pal = pal_ndbi,
+    position = "bottomright",
+    group = "NDBI"
+  ) %>%    
+  addLayersControl(
+    baseGroups = c("OpenStreetMap", "CartoDB Dark Matter", "Stamen Toner Lite", "Imágenes de ESRI"),
+    overlayGroups = c("Límite de la GAM", "NDBI"),
+    options = layersControlOptions(collapsed = TRUE)    
+  ) %>%  
+  addMiniMap(
+    toggleDisplay = TRUE,
+    position = "bottomleft",
+    tiles = providers$OpenStreetMap.Mapnik
+  ) %>%
+  addScaleBar(
+    position = "bottomleft",
+    options = scaleBarOptions(imperial = FALSE)
+  ) %>%
+  addMouseCoordinates()
+
+```
+
+Gráfico de LST vs. NDVI
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### 
+
+```{r}
+
+ay <- list(
+  tickfont = list(color = "green"),
+  overlaying = "y",
+  side = "right",
+  title = "NDVI"
+)
+
+plot_ly(data = df_lst_ndbi_ndvi.ordenado_lst,
+        x = ~ reorder(CANTON, -LST_MEAN),
+        y = ~ LST_MEAN,
+        name = 'LST',
+        type = 'scatter',
+        mode = 'lines',
+        line = list(color = "red")) %>%
+  add_trace(y = ~ NDVI_MEAN,
+            name = 'NDVI',
+            mode = 'lines',
+            line = list(color = "green"),
+            yaxis = "y2") %>%  
+  layout(title = "La vegetación urbana regula la temperatura",
+         yaxis = list(title = "LST", tickfont = list(color = "red")),
+         yaxis2 = ay,
+         xaxis = list(title = "Cantón"),
+         legend = list(x = 0.5, y = 1.0),
+         hovermode = "compare")
+
+```
+
+Gráfico de LST vs. NDBI
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### 
+
+```{r}
+
+ay <- list(
+  tickfont = list(color = "grey"),
+  overlaying = "y",
+  side = "right",
+  title = "NDBI"
+)
+
+plot_ly(data = df_lst_ndbi_ndvi.ordenado_lst,
+        x = ~ reorder(CANTON, -LST_MEAN),
+        y = ~ LST_MEAN,
+        name = 'LST',
+        type = 'scatter',
+        mode = 'lines',
+        line = list(color = "red")) %>%
+  add_trace(y = ~ NDBI_MEAN,
+            name = 'NDBI',
+            mode = 'lines',
+            line = list(color = "grey"),
+            yaxis = "y2") %>%  
+  layout(title = "",
+         yaxis = list(title = "LST", tickfont = list(color = "red")),
+         yaxis2 = ay,
+         xaxis = list(title = "Cantón"),
+         legend = list(x = 0.5, y = 1.0),
+         hovermode = "compare")
+
+```
