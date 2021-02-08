@@ -56,9 +56,9 @@ raster_lst <-
   mask(sf_limite_gam_web)
 
 raster_lst[raster_lst==65535] <- NA
-min_raster_lst <- format(cellStats(raster_lst, stat='min'), digits = 3, nsmall = 1)
-max_raster_lst <- format(cellStats(raster_lst, stat='max'), digits = 3, nsmall = 1)
-mean_raster_lst <- format(cellStats(raster_lst, stat='mean'), digits = 3, nsmall = 1)
+min_raster_lst <- format(cellStats(raster_lst, stat='min'), digits=3, nsmall=1)
+max_raster_lst <- format(cellStats(raster_lst, stat='max'), digits=3, nsmall=1)
+mean_raster_lst <- format(cellStats(raster_lst, stat='mean'), digits=3, nsmall=1)
 
 # Capa raster de LST en infraestructura gris (en Web Mercator)
 raster_lst_infraestructura_gris <-
@@ -66,11 +66,21 @@ raster_lst_infraestructura_gris <-
   crop(sf_limite_gam_web) %>%
   mask(sf_limite_gam_web)
 
+raster_lst_infraestructura_gris[raster_lst_infraestructura_gris==65535] <- NA
+min_raster_lst_infraestructura_gris <- format(cellStats(raster_lst_infraestructura_gris, stat='min'), digits=3, nsmall=1)
+max_raster_lst_infraestructura_gris <- format(cellStats(raster_lst_infraestructura_gris, stat='max'), digits=3, nsmall=1)
+mean_raster_lst_infraestructura_gris <- format(cellStats(raster_lst_infraestructura_gris, stat='mean'), digits=3, nsmall=1)
+
 # Capa raster de NDVI (en Web Mercator)
 raster_ndvi <-
   raster(url_raster_ndvi) %>%
   crop(sf_limite_gam_web) %>%
   mask(sf_limite_gam_web)
+
+raster_ndvi[raster_ndvi==65535] <- NA
+min_raster_ndvi <- format(cellStats(raster_ndvi, stat='min'), digits=2, nsmall=1)
+max_raster_ndvi <- format(cellStats(raster_ndvi, stat='max'), digits=2, nsmall=1)
+mean_raster_ndvi <- format(cellStats(raster_ndvi, stat='mean'), digits=2, nsmall=1)
 
 # Capa raster de NDBI (en Web Mercator)
 raster_ndbi <-
@@ -78,6 +88,11 @@ raster_ndbi <-
   aggregate(fact=2, fun=modal) %>% # ¡¡HAY QUE TRATAR DE ELIMINAR ESTA AGRUPACIÓN. PODRÍA FUNCIONAR AL USAR MÁS MEMORIA LINUX!!  
   crop(sf_limite_gam_web) %>%
   mask(sf_limite_gam_web)
+
+raster_ndbi[raster_ndbi==65535] <- NA
+min_raster_ndbi <- format(cellStats(raster_ndbi, stat='min'), digits=2, nsmall=1)
+max_raster_ndbi <- format(cellStats(raster_ndbi, stat='max'), digits=2, nsmall=1)
+mean_raster_ndbi <- format(cellStats(raster_ndbi, stat='mean'), digits=2, nsmall=1)
 
 #--------------- Objetos df ---------------
 
@@ -215,7 +230,7 @@ valueBox(
 LST en infraestructura gris
 =======================================================================
 
-Row
+Row {data-height=800}
 -----------------------------------------------------------------------
 
 ### 
@@ -266,10 +281,37 @@ leaflet() %>%
 
 ```
 
+Row {data-height=200}
+-----------------------------------------------------------------------
+
+### Temperatura mínima {.value-box} {data-width=333}
+```{r}
+valueBox(
+  value = "LST mínima", 
+  caption = paste("<h2><strong>", min_raster_lst_infraestructura_gris,  "°C</strong></h2>")
+)
+```
+
+### Temperatura máxima {.value-box} {data-width=333}
+```{r}
+valueBox(
+  value = "LST máxima", 
+  caption = paste("<h2><strong>", max_raster_lst_infraestructura_gris,  "°C</strong></h2>")
+)
+```
+
+### Temperatura promedio {.value-box} {data-width=333}
+```{r}
+valueBox(
+  value = "LST promedio", 
+  caption = paste("<h2><strong>", mean_raster_lst_infraestructura_gris,  "°C</strong></h2>")
+)
+```
+
 Índice de diferencia normalizada  de vegetación (NDVI)
 =======================================================================
 
-Row
+Row {data-height=800}
 -----------------------------------------------------------------------
 
 ### 
@@ -320,10 +362,37 @@ leaflet() %>%
 
 ```
 
+Row {data-height=200}
+-----------------------------------------------------------------------
+
+### NDVI mínimo {.value-box} {data-width=333}
+```{r}
+valueBox(
+  value = "NDVI mínimo", 
+  caption = paste("<h2><strong>", min_raster_ndvi,  "</strong></h2>")
+)
+```
+
+### NDVI máximo {.value-box} {data-width=333}
+```{r}
+valueBox(
+  value = "NDVI máximo", 
+  caption = paste("<h2><strong>", max_raster_ndvi,  "</strong></h2>")
+)
+```
+
+### NDVI promedio {.value-box} {data-width=333}
+```{r}
+valueBox(
+  value = "NDVI promedio", 
+  caption = paste("<h2><strong>", mean_raster_ndvi,  "</strong></h2>")
+)
+```
+
 Índice de diferencia normalizada de edificación (NDBI)
 =======================================================================
 
-Row
+Row {data-height=800}
 -----------------------------------------------------------------------
 
 ###
@@ -372,6 +441,33 @@ leaflet() %>%
   ) %>%
   addMouseCoordinates()
 
+```
+
+Row {data-height=200}
+-----------------------------------------------------------------------
+
+### NDVI mínimo {.value-box} {data-width=333}
+```{r}
+valueBox(
+  value = "NDBI mínimo", 
+  caption = paste("<h2><strong>", min_raster_ndbi,  "</strong></h2>")
+)
+```
+
+### NDBI máximo {.value-box} {data-width=333}
+```{r}
+valueBox(
+  value = "NDBI máximo", 
+  caption = paste("<h2><strong>", max_raster_ndbi,  "</strong></h2>")
+)
+```
+
+### NDBI promedio {.value-box} {data-width=333}
+```{r}
+valueBox(
+  value = "NDBI promedio", 
+  caption = paste("<h2><strong>", mean_raster_ndbi,  "</strong></h2>")
+)
 ```
 
 LST vs. NDVI
