@@ -1,5 +1,5 @@
 ---
-title: "Calentamiento urbano de la GAM"
+title: "Calentamiento urbano de la Gran Área Metropolitana"
 output: 
   flexdashboard::flex_dashboard:
     orientation: rows
@@ -54,6 +54,11 @@ raster_lst <-
   raster(url_raster_lst) %>%
   crop(sf_limite_gam_web) %>%
   mask(sf_limite_gam_web)
+
+raster_lst[raster_lst==65535] <- NA
+min_raster_lst <- format(cellStats(raster_lst, stat='min'), digits = 3, nsmall = 1)
+max_raster_lst <- format(cellStats(raster_lst, stat='max'), digits = 3, nsmall = 1)
+mean_raster_lst <- format(cellStats(raster_lst, stat='mean'), digits = 3, nsmall = 1)
 
 # Capa raster de LST en infraestructura gris (en Web Mercator)
 raster_lst_infraestructura_gris <-
@@ -126,10 +131,10 @@ pal_ndbi <-
 
 ```
 
-Temperatura superficial (LST)
+Temperatura superficial de la tierra (LST)
 =======================================================================
 
-Row
+Row {data-height=800}
 -----------------------------------------------------------------------
 
 ### 
@@ -180,7 +185,34 @@ leaflet() %>%
 
 ```
 
-LST de infraestructura gris
+Row {data-height=200}
+-----------------------------------------------------------------------
+
+### Temperatura mínima {.value-box} {data-width=333}
+```{r}
+valueBox(
+  value = "LST mínima", 
+  caption = paste("<h2><strong>", min_raster_lst,  "°C</strong></h2>")
+)
+```
+
+### Temperatura máxima {.value-box} {data-width=333}
+```{r}
+valueBox(
+  value = "LST máxima", 
+  caption = paste("<h2><strong>", max_raster_lst,  "°C</strong></h2>")
+)
+```
+
+### Temperatura promedio {.value-box} {data-width=333}
+```{r}
+valueBox(
+  value = "LST promedio", 
+  caption = paste("<h2><strong>", mean_raster_lst,  "°C</strong></h2>")
+)
+```
+
+LST en infraestructura gris
 =======================================================================
 
 Row
@@ -234,7 +266,7 @@ leaflet() %>%
 
 ```
 
-Índice de vegetación (NDVI)
+Índice de diferencia normalizada  de vegetación (NDVI)
 =======================================================================
 
 Row
@@ -288,7 +320,7 @@ leaflet() %>%
 
 ```
 
-Índice de construcción (NDBI)
+Índice de diferencia normalizada de edificación (NDBI)
 =======================================================================
 
 Row
